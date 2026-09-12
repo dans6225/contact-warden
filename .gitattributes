@@ -1,0 +1,16 @@
+/vendor export-ignore
+/tests export-ignore
+/examples export-ignore
+/bin export-ignore
+/.idea export-ignore
+/.junie export-ignore
+/.github export-ignore
+/.env export-ignore
+/.env.example export-ignore
+/.gitignore export-ignore
+/.gitattributes export-ignore
+/.phpunit.result.cache export-ignore
+/phpunit.xml.dist export-ignore
+/ARCHITECTURE.md export-ignore
+/index.php export-ignore
+/composer.lock export-ignore
