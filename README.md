@@ -30,6 +30,12 @@ Included signals: honeypot, server-authoritative timing, token validity, referer
 (deliberately conservative — it won't flag privacy-hardened browsers), decaying IP reputation,
 spam-keyword/link-density content heuristics, and sliding-window rate limiting.
 
+A few optional building blocks are included for common needs beyond scoring itself:
+`Validation\RequiredFieldValidator` for pre-scoring field checks, `Store\ContactRecordStore` (with
+a `PdoContactRecordStore` default) for keeping the full content of accepted submissions somewhere
+reviewable, and `Mail\ConditionalMailer` for toggling email delivery and/or storage independently
+— see [Optional building blocks](#optional-building-blocks) below.
+
 ## Installation
 
 ```bash
@@ -95,6 +101,61 @@ A complete, working demo (form + init endpoint + submit handler) lives in
 Every scoring weight, threshold, and behavior is a constructor argument on `ContactWardenConfig`
 — see [`src/Config/ContactWardenConfig.php`](src/Config/ContactWardenConfig.php) for the full list
 and the reasoning behind each default.
+
+## Optional building blocks
+
+**Field validation before scoring.** A submission can be well-formed and still get REJECTed by
+the Engine, or malformed and never reach it at all — run required-field checks first:
+
+```php
+use ContactWarden\Validation\RequiredFieldValidator;
+
+$errors = RequiredFieldValidator::validate($fields, requiredFields: ['name', 'email', 'message']);
+if ($errors !== []) {
+    // re-render the form with $errors and the previously entered values — nothing has
+    // been scored or has consumed a token yet
+}
+```
+
+**Keeping the actual message content.** `StorageInterface::logSubmission()` only ever records the
+scoring decision, never the message — by design, since abuse evidence and message content are
+different concerns with different retention needs. If you want accepted submissions kept
+somewhere a human can review them, add a `ContactRecordStore`:
+
+```php
+use ContactWarden\Mail\ConditionalMailer;
+use ContactWarden\Store\PdoContactRecordStore;
+
+$recordStore = PdoContactRecordStore::fromConfig(DatabaseConfig::fromEnv()); // same DB as $storage, or a different one
+$mailer = new ConditionalMailer(
+    mailer: $yourRealMailer,
+    recordStore: $recordStore,
+    deliverEmail: true,
+    deliverDatabase: true,
+);
+// pass $mailer to Engine as usual
+```
+
+Run `bin/migrate.php` again after adding `PdoContactRecordStore` for the first time — it creates
+`cw_contacts` alongside the base tables. `ContactRecordStore` is deliberately storage-only: no
+read-back, no read/archived/deleted state. Building an inbox on top (as opposed to just keeping a
+record) is host-app territory — the shape of that is too opinionated to bake into an abuse-detection
+package.
+
+## Runtime-configurable settings
+
+`ContactWardenConfig`'s constructor already accepts every weight/threshold as a named argument, so
+letting an admin change them without a deploy doesn't need any package support — just rebuild the
+config from whatever your app already uses for admin-managed settings on each request (or cache it
+per-request):
+
+```php
+$config = new ContactWardenConfig(
+    challengeThreshold: (int) $yourSettingsStore->get('ContactWarden.challengeThreshold', 30),
+    rejectThreshold: (int) $yourSettingsStore->get('ContactWarden.rejectThreshold', 70),
+    // ...override only what you expose in your admin UI; everything else stays at its default
+);
+```
 
 ## Testing
 

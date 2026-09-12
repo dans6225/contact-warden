@@ -10,8 +10,8 @@ use ContactWarden\Store\PdoStorage;
  * Builds an in-memory SQLite-backed PdoStorage for tests — this is the
  * dependency-free backend the architecture calls for so the suite never
  * touches the real MySQL database. Schema is a portable subset of
- * src/Store/migrations/0001_create_tables.sql (no ENUM/AUTO_INCREMENT/
- * ENGINE clauses, which are MySQL-only).
+ * src/Store/migrations/0001_create_tables.sql and 0002_create_contacts_table.sql
+ * (no ENUM/AUTO_INCREMENT/ENGINE clauses, which are MySQL-only).
  */
 final class SqliteStorageFactory
 {
@@ -56,6 +56,13 @@ final class SqliteStorageFactory
             subject TEXT PRIMARY KEY,
             score REAL NOT NULL DEFAULT 0,
             last_updated TEXT NOT NULL
+        )');
+
+        $pdo->exec('CREATE TABLE cw_contacts (
+            id INTEGER PRIMARY KEY,
+            created_at TEXT NOT NULL,
+            ip TEXT NOT NULL,
+            fields TEXT NOT NULL
         )');
 
         return $pdo;
