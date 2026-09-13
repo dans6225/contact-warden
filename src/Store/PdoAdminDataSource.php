@@ -126,6 +126,19 @@ final class PdoAdminDataSource implements AdminDataSource
         );
     }
 
+    public function countTokens(): int
+    {
+        return (int) $this->pdo->query('SELECT COUNT(*) FROM cw_tokens')->fetchColumn();
+    }
+
+    public function countExpiredOrConsumedTokens(\DateTimeImmutable $now): int
+    {
+        $stmt = $this->pdo->prepare('SELECT COUNT(*) FROM cw_tokens WHERE expires_at < :now OR consumed_at IS NOT NULL');
+        $stmt->execute(['now' => $now->format('Y-m-d H:i:s')]);
+
+        return (int) $stmt->fetchColumn();
+    }
+
     /**
      * Shared filter builder for cw_submissions/cw_abuse_log — both are
      * (decision, ip, created_at) logs with the same optional filters.

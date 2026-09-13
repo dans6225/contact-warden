@@ -29,4 +29,9 @@ interface AdminDataSource
 
     /** @return ReputationEntry[] */
     public function listReputations(ReputationQuery $query): array;
+
+    public function countTokens(): int;
+
+    /** Tokens past their expires_at, or already consumed, as of $now. */
+    public function countExpiredOrConsumedTokens(\DateTimeImmutable $now): int;
 }

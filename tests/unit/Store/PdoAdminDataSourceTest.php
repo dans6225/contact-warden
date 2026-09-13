@@ -94,6 +94,27 @@ final class PdoAdminDataSourceTest extends TestCase
         $this->assertSame(1, $page[1]->score);
     }
 
+    public function test_count_tokens_and_expired_or_consumed(): void
+    {
+        $pdo = SqliteStorageFactory::createPdo();
+        $storage = new PdoStorage($pdo);
+        $admin = new PdoAdminDataSource($pdo);
+        $now = new \DateTimeImmutable('2026-01-01 00:00:00');
+
+        // consumeToken() checks expiry against the real wall clock, not $now, so the
+        // "consumed" token's expiry must be genuinely in the future to be marked
+        // consumed rather than bounced back as already-expired.
+        $farFuture = (new \DateTimeImmutable())->modify('+1 year');
+
+        $storage->storeToken('active', [], $now, $now->modify('+10 minutes'), '1.1.1.1');
+        $storage->storeToken('expired', [], $now, $now->modify('-10 minutes'), '1.1.1.1');
+        $storage->storeToken('consumed', [], $now, $farFuture, '1.1.1.1');
+        $storage->consumeToken('consumed');
+
+        $this->assertSame(3, $admin->countTokens());
+        $this->assertSame(2, $admin->countExpiredOrConsumedTokens($now));
+    }
+
     public function test_list_and_count_abuse_events_with_evidence(): void
     {
         $pdo = SqliteStorageFactory::createPdo();
