@@ -38,10 +38,11 @@ interface AdminConnectorInterface
     /**
      * Generic action dispatch rather than one named method per action: a
      * connector can support its own action vocabulary beyond what core
-     * anticipates. The one convention core itself enables is
-     * `reset_reputation` with `['subject' => string]`, since
-     * StorageInterface::setReputation() is already the one write path an
-     * admin action against reputation could use.
+     * anticipates. The conventions core itself enables, backed by
+     * AdminMaintenance: `purge_tokens`, `purge_submissions` / `purge_abuse`
+     * (both take `['days' => int]`), `forget_reputation` (takes
+     * `['subject' => string]`), and `reset_reputation` (no input — clears
+     * every subject).
      *
      * @param array<string,mixed> $input
      */
