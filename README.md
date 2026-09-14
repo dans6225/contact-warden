@@ -142,6 +142,34 @@ read-back, no read/archived/deleted state. Building an inbox on top (as opposed 
 record) is host-app territory — the shape of that is too opinionated to bake into an abuse-detection
 package.
 
+## Admin UI connectors
+
+ContactWarden has no admin UI of its own — but it does expose the read/write surface one needs,
+under `ContactWarden\Admin\`, so a framework-specific **connector** package can build one without
+reaching into storage internals:
+
+- **`AdminDataSource`** (default: `Store\PdoAdminDataSource`) — read-only, paginated queries over
+  submissions, abuse events, reputation, and token stats. Deliberately separate from
+  `StorageInterface`: that one is what `Engine` itself writes through, and every implementer
+  (including the test suite's SQLite backend) has to satisfy it, so listing/pagination for an
+  optional admin UI has no business living there.
+- **`AdminMaintenance`** (default: `Store\PdoAdminMaintenance`) — the housekeeping writes an admin
+  screen needs that `Engine` never performs itself: purge expired tokens, purge old
+  submissions/abuse-log rows by age, forget one subject's reputation, or reset all of it.
+- **`AdminConnectorInterface`** — the contract a per-framework connector package implements: five
+  `render*()` methods (returning plain HTML, so this package never depends on any framework's HTTP
+  types) plus a generic `handleAction()` dispatch for the `AdminMaintenance` operations above.
+
+The first connector, [`dans6225/contact-warden-ci4`](https://github.com/dans6225/contact-warden-ci4),
+implements this for CodeIgniter 4. Building one for another framework means implementing
+`AdminConnectorInterface` against `AdminDataSource`/`AdminMaintenance` the same way — the CI4
+connector's `Ci4AdminConnector` class is the reference to work from.
+
+Two things this deliberately does **not** cover, same reasoning as elsewhere in this README:
+message content (`ContactRecordStore` stays write-only — see above) and persisting
+admin-configurable settings (see [Runtime-configurable settings](#runtime-configurable-settings)
+below) — both stay host-app territory.
+
 ## Runtime-configurable settings
 
 `ContactWardenConfig`'s constructor already accepts every weight/threshold as a named argument, so
