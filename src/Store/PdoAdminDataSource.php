@@ -103,12 +103,7 @@ final class PdoAdminDataSource implements AdminDataSource
 
     public function listReputations(ReputationQuery $query): array
     {
-        $where = '';
-        $params = [];
-        if ($query->minScore !== null) {
-            $where = ' WHERE score >= :min_score';
-            $params[':min_score'] = $query->minScore;
-        }
+        [$where, $params] = $this->reputationConditions($query->minScore);
 
         $stmt = $this->preparePage(
             'SELECT subject, score, last_updated FROM cw_reputation' . $where . ' ORDER BY score DESC',
@@ -126,6 +121,13 @@ final class PdoAdminDataSource implements AdminDataSource
         );
     }
 
+    public function countReputations(ReputationQuery $query): int
+    {
+        [$where, $params] = $this->reputationConditions($query->minScore);
+
+        return $this->count('cw_reputation', $where, $params);
+    }
+
     public function countTokens(): int
     {
         return (int) $this->pdo->query('SELECT COUNT(*) FROM cw_tokens')->fetchColumn();
@@ -137,6 +139,16 @@ final class PdoAdminDataSource implements AdminDataSource
         $stmt->execute(['now' => $now->format('Y-m-d H:i:s')]);
 
         return (int) $stmt->fetchColumn();
+    }
+
+    /** @return array{0: string, 1: array<string, mixed>} */
+    private function reputationConditions(?float $minScore): array
+    {
+        if ($minScore === null) {
+            return ['', []];
+        }
+
+        return [' WHERE score >= :min_score', [':min_score' => $minScore]];
     }
 
     /**

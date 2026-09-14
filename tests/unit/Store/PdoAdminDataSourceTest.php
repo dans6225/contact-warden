@@ -149,5 +149,8 @@ final class PdoAdminDataSourceTest extends TestCase
         $worstOffenders = $admin->listReputations(new ReputationQuery(minScore: 50.0));
         $this->assertCount(2, $worstOffenders);
         $this->assertSame(90.0, $worstOffenders[0]->record->score);
+
+        $this->assertSame(3, $admin->countReputations(new ReputationQuery()));
+        $this->assertSame(2, $admin->countReputations(new ReputationQuery(minScore: 50.0)));
     }
 }
