@@ -1,7 +1,6 @@
 /vendor export-ignore
 /tests export-ignore
 /examples export-ignore
-/bin export-ignore
 /.idea export-ignore
 /.junie export-ignore
 /.github export-ignore

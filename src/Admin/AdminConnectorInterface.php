@@ -42,7 +42,9 @@ interface AdminConnectorInterface
      * AdminMaintenance: `purge_tokens`, `purge_submissions` / `purge_abuse`
      * (both take `['days' => int]`), `forget_reputation` (takes
      * `['subject' => string]`), and `reset_reputation` (no input — clears
-     * every subject).
+     * every subject). MaintenanceActions implements exactly this vocabulary —
+     * a connector's handleAction() should normally just delegate to it, first
+     * handling any extra actions of its own if it has them.
      *
      * @param array<string,mixed> $input
      */

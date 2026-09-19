@@ -50,8 +50,9 @@ required:
 php vendor/dans6225/contact-warden/bin/migrate.php
 ```
 
-(reads `DB_HOST`/`DB_DATABASE`/`DB_USERNAME`/`DB_PASSWORD`/`DB_PORT`/`DB_CHARSET` from `.env` —
-see `.env.example`.)
+(reads `DB_HOST`/`DB_DATABASE`/`DB_USERNAME`/`DB_PASSWORD`/`DB_PORT`/`DB_CHARSET` from real
+environment variables first, then from a `.env` in the directory you run it from — see
+`.env.example`. It's idempotent, so re-running it after an upgrade is safe.)
 
 ## Quickstart
 
@@ -159,11 +160,17 @@ reaching into storage internals:
 - **`AdminConnectorInterface`** — the contract a per-framework connector package implements: five
   `render*()` methods (returning plain HTML, so this package never depends on any framework's HTTP
   types) plus a generic `handleAction()` dispatch for the `AdminMaintenance` operations above.
+- **`MaintenanceActions`** — the standard action vocabulary (`purge_tokens`, `purge_submissions`,
+  `purge_abuse`, `forget_reputation`, `reset_reputation`) implemented once, so a connector's
+  `handleAction()` is normally a one-line delegation rather than its own copy of the mapping.
 
-The first connector, [`dans6225/contact-warden-ci4`](https://github.com/dans6225/contact-warden-ci4),
-implements this for CodeIgniter 4. Building one for another framework means implementing
-`AdminConnectorInterface` against `AdminDataSource`/`AdminMaintenance` the same way — the CI4
-connector's `Ci4AdminConnector` class is the reference to work from.
+Connectors so far:
+[`contact-warden-ci4`](https://github.com/dans6225/contact-warden-ci4) (CodeIgniter 4),
+[`contact-warden-laravel`](https://github.com/dans6225/contact-warden-laravel), and
+[`contact-warden-plain-php`](https://github.com/dans6225/contact-warden-plain-php) (no framework).
+Building one for another framework means implementing `AdminConnectorInterface` against
+`AdminDataSource`/`AdminMaintenance` the same way — the plain-PHP connector is one small class and
+the best reference to work from.
 
 Two things this deliberately does **not** cover, same reasoning as elsewhere in this README:
 message content (`ContactRecordStore` stays write-only — see above) and persisting

@@ -76,11 +76,22 @@ used as-is, `token_status = missing`).
 submit handler) — read it before wiring the package into a new host app; it shows the exact
 signal-construction pattern `Engine` expects.
 
+**Admin surface** (`src/Admin/`): a read/write contract for admin UIs, deliberately separate from
+`StorageInterface` (which `Engine` writes through). `AdminDataSource` (+ `Store\PdoAdminDataSource`)
+is read-only and paginated; `AdminMaintenance` (+ `Store\PdoAdminMaintenance`) holds the purge/
+forget/reset writes; `MaintenanceActions` is the one implementation of the action-name vocabulary
+that connectors delegate `handleAction()` to; `AdminConnectorInterface` is what a per-framework
+connector package implements (five `render*()` methods returning HTML strings, plus
+`handleAction()`). This package renders nothing itself — rendering lives in the connector packages
+(`contact-warden-ci4`, `contact-warden-laravel`, `contact-warden-plain-php`, each its own repo).
+The plain-PHP one is the smallest reference for writing another.
+
 ## Known consumer
 
-danoladigital (a separate CodeIgniter 4 project) is wired to the *predecessor* package
-(`contact-worx/contact-worx`, vendored via a local Composer path repository) and has its own
-admin UI (settings/contacts/system tabs) built on top of it, including patterns this package has
-since absorbed (`RequiredFieldValidator`, `ContactRecordStore`, `ConditionalMailer` all generalize
-things danoladigital built bespoke). Switching danoladigital to depend on this package instead is
-tracked as separate, not-yet-started follow-up work — don't assume it's already done.
+danoladigital (a separate CodeIgniter 4 project) depends on this package via a local Composer path
+repository (mirrored copy, `dev-main`) and has its own admin UI (settings/contacts/system tabs). Its
+System tab reads and writes through `AdminDataSource`/`AdminMaintenance`; Settings and Contacts
+stay host-app code, since this package deliberately has no settings machinery and
+`ContactRecordStore` is write-only. Because the mirror is a copy, run `composer update
+dans6225/contact-warden` there after changing this package — and if production deploys `vendor/`
+by hand, verify `vendor/composer/autoload_psr4.php` actually got updated.
